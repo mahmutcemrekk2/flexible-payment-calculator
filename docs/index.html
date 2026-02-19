@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Esnek kredi ödeme hesaplayıcı — Ara ödemeli, azalan taksitli ve artan taksitli kredi hesaplama aracı. QA ve finans profesyonelleri için.">
+  <title>Flexible Payment Calculator | Esnek Kredi Hesaplayıcı</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-badge">
+      <span>🏦</span> Open Source Banking Tool
+    </div>
+    <h1>Flexible Payment Calculator</h1>
+    <p>Esnek kredi ödeme planı hesaplayıcı — Banka API mantığıyla birebir uyumlu</p>
+  </header>
+
+  <!-- Main -->
+  <main class="container">
+
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="inter" onclick="switchMode('inter')">
+        <span class="icon">🔄</span> Ara Ödemeli
+      </button>
+      <button class="mode-tab" data-mode="decreasing" onclick="switchMode('decreasing')">
+        <span class="icon">📉</span> Azalan Taksit
+      </button>
+      <button class="mode-tab" data-mode="increasing" onclick="switchMode('increasing')">
+        <span class="icon">📈</span> Artan Taksit
+      </button>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card">
+      <h2>⚙️ Kredi Parametreleri</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Kredi Türü</label>
+          <select id="loanType">
+            <option value="CONSUMER">Tüketici (Consumer)</option>
+            <option value="MORTGAGE">Konut (Mortgage)</option>
+            <option value="VEHICLE">Taşıt (Vehicle)</option>
+            <option value="SME">KOBİ (SME)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ödeme Sıklığı</label>
+          <select id="paymentFrequency">
+            <option value="MONTHLY">Aylık</option>
+            <option value="THREE_MONTHLY">3 Aylık</option>
+            <option value="SIX_MONTHLY">6 Aylık</option>
+            <option value="YEARLY">Yıllık</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kredi Tutarı (₺)</label>
+          <input type="number" id="amount" value="500000" min="1000" step="1000">
+        </div>
+        <div class="form-group">
+          <label>Vade (Taksit Sayısı)</label>
+          <input type="number" id="maturity" value="36" min="2" max="360">
+        </div>
+        <div class="form-group">
+          <label>Aylık Faiz Oranı (%)</label>
+          <input type="number" id="interestRate" value="4.15" min="0.01" max="100" step="0.01">
+        </div>
+      </div>
+
+      <!-- Inter-Payment Config -->
+      <div class="variation-section" id="interPaymentConfig">
+        <h3>🔄 Ara Ödeme Ayarları</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Başlangıç Taksit No</label>
+            <input type="number" id="ipStart" value="3" min="1">
+          </div>
+          <div class="form-group">
+            <label>Sıklık (Kaç Taksitte Bir)</label>
+            <input type="number" id="ipFrequency" value="3" min="1">
+          </div>
+          <div class="form-group">
+            <label>Ara Ödeme Tutarı (₺)</label>
+            <input type="number" id="ipAmount" value="15000" min="0" step="1000">
+          </div>
+          <div class="form-group">
+            <label>Hesaplama Yöntemi</label>
+            <select id="calcMethod">
+              <option value="ADD_TO_INSTALLMENT">Taksit + Ara Ödeme</option>
+              <option value="SET_AS_INSTALLMENT">Ara Ödeme olarak Ayarla</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decreasing Config -->
+      <div class="variation-section" id="decreasingConfig" style="display:none">
+        <h3>📉 Azalma Ayarları</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Azalma Başlangıç Taksit No</label>
+            <input type="number" id="redStart" value="6" min="2">
+          </div>
+          <div class="form-group">
+            <label>Azalma Sıklığı (Kaç Taksitte Bir)</label>
+            <input type="number" id="redFrequency" value="6" min="1">
+          </div>
+          <div class="form-group">
+            <label>Azalma Tipi</label>
+            <select id="redType" onchange="toggleVariationType('red')">
+              <option value="RATE">Oran Bazlı (%)</option>
+              <option value="AMOUNT">Miktar Bazlı (₺)</option>
+            </select>
+          </div>
+          <div class="form-group" id="redRateGroup">
+            <label>Azalma Oranı (ör: 0.05 = %5)</label>
+            <input type="number" id="redRate" value="0.05" min="0.01" max="0.99" step="0.01">
+          </div>
+          <div class="form-group" id="redAmountGroup" style="display:none">
+            <label>Azalma Miktarı (₺)</label>
+            <input type="number" id="redAmount" value="1000" min="1" step="100">
+          </div>
+        </div>
+      </div>
+
+      <!-- Increasing Config -->
+      <div class="variation-section" id="increasingConfig" style="display:none">
+        <h3>📈 Artış Ayarları</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Artış Başlangıç Taksit No</label>
+            <input type="number" id="incStart" value="6" min="2">
+          </div>
+          <div class="form-group">
+            <label>Artış Sıklığı (Kaç Taksitte Bir)</label>
+            <input type="number" id="incFrequency" value="6" min="1">
+          </div>
+          <div class="form-group">
+            <label>Artış Tipi</label>
+            <select id="incType" onchange="toggleVariationType('inc')">
+              <option value="RATE">Oran Bazlı (%)</option>
+              <option value="AMOUNT">Miktar Bazlı (₺)</option>
+            </select>
+          </div>
+          <div class="form-group" id="incRateGroup">
+            <label>Artış Oranı (ör: 0.05 = %5)</label>
+            <input type="number" id="incRate" value="0.05" min="0.01" max="0.99" step="0.01">
+          </div>
+          <div class="form-group" id="incAmountGroup" style="display:none">
+            <label>Artış Miktarı (₺)</label>
+            <input type="number" id="incAmount" value="1000" min="1" step="100">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculate Button -->
+    <button class="btn-calculate" onclick="calculate()">
+      🧮 Hesapla
+    </button>
+
+    <!-- Results -->
+    <div class="results-section" id="resultsSection">
+
+      <!-- Summary Cards -->
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <!-- Payment Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3>📊 Ödeme Planı</h3>
+          <span id="rowCount" style="font-size:0.75rem;color:var(--text-muted)"></span>
+        </div>
+        <div class="table-wrapper">
+          <table class="payment-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Aylık Ödeme</th>
+                <th>Anapara</th>
+                <th>Faiz</th>
+                <th>KKDF</th>
+                <th>BSMV</th>
+                <th>Bakiye</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>
+      Built by <strong>Mahmut Cem Rek</strong> ·
+      <a href="https://github.com/mahmutcemrekk2/flexible-payment-calculator" target="_blank">GitHub</a> ·
+      QA & Finance
+    </p>
+  </footer>
+
+  <script src="calculator.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
